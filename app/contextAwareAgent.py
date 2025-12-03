@@ -10,18 +10,19 @@ llm = ChatOpenAI(
     model="gpt-5-mini",
 )
 
+# Conversation history to retain context
 history = [
     SystemMessage("You are a geography tutor"),
 ]
 
+# Function to handle conversation with context retention
 def ask(question):
-    history.append(HumanMessage(question))
-    response = llm.invoke(history)
-    history.append(AIMessage(response.content))
+    history.append(HumanMessage(question)) # Append the user's question to history
+    response = llm.invoke(history) # Invoke the model with the conversation history
+    history.append(AIMessage(response.content)) # Append the agents response to history
     print("\nAssistant:", response.content, "\n")
 
+# interactions -> Conversation with context retention
 ask("What is the capital of France?")
 ask("Where was the capital again?")
 
-# prompt_template = PromptTemplate(template="Tell me a joke about {topic}")
-# llm.invoke(prompt_template.format(topic="Java"))
