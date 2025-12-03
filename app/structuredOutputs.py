@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Structured output model definition -> Defines how the LLM should format its response
 class TripPlan(BaseModel):
     title: str
     location: str
@@ -26,7 +27,8 @@ def ask(question):
     # Convert the TripPlan model to a string before storing as a message
     history.append(AIMessage(response.model_dump_json()))
 
-    print("\nAssistant:", response, "\n")
+    print("\nAssistant:", response.content, "\n")
 
-ask("I would like to plan a trip to Paris. Can you help?")
+ask("I would like to plan a trip to Paris. Can you help?") # Initial question to start planning a trip
+ask("I am going on the 14th August") # Follow-up question to test context retention 
 
