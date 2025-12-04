@@ -8,8 +8,6 @@ class State(BaseModel):
     action: Literal["reverse", "upper"]  # strict allowed actions
     result: Optional[str] = None
 
-workflow = StateGraph(State)
-
 def reverse_node(state: State) -> State:
     return State(
         input=state.input,
@@ -23,6 +21,8 @@ def upper_node(state: State) -> State:
         action=state.action,
         result=state.input.upper()
     )
+
+workflow = StateGraph(State)
 
 workflow.add_node(reverse_node)
 workflow.add_node(upper_node)
