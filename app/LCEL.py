@@ -67,6 +67,7 @@ analysis_prompt = ChatPromptTemplate.from_messages([
     )
 ]).partial(format_instructions=PydanticOutputParser(pydantic_object=AnalysisReport).get_format_instructions())
 
+
 analysis_chain = (
     {"industry": RunnablePassthrough(), "businessIdea": RunnablePassthrough(), "targetMarket": RunnablePassthrough()}
     | analysis_prompt

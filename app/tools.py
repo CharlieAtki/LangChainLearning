@@ -38,7 +38,7 @@ tool_map = {"multiplier": multiplier}
 # -----------------------------
 parser = PydanticOutputParser(pydantic_object=Multiplier)
 
-
+\
 # -----------------------------
 # First prompt
 # -----------------------------
