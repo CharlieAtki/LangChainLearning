@@ -1,5 +1,5 @@
 from schemas import AgentState, UserIntent, AnswerResponse
-from prompts import get_intent_classification_prompt
+from prompts import get_intent_classification_prompt, get_chat_prompt_template
 
 def triage_agent_node(state: AgentState, config) -> AgentState: # Agent to classify user intent
     llm = config["llm"].with_structured_output(UserIntent)
@@ -26,25 +26,45 @@ def triage_agent_node(state: AgentState, config) -> AgentState: # Agent to class
     state.actions_taken.append("classify_intent")
     return state
 
-def qa_agent_node(state: AnswerResponse) -> AnswerResponse:
-    response = llm.invoke(prompt)
-    answer = response.content.strip()
+def qa_agent_node(state: AgentState, config):
+    llm = config["llm"].with_structured_output(AnswerResponse)
 
-    return AnswerResponse(
-        input=state.input,
-        action=state.action,
-        result=answer
+    prompt = get_chat_prompt_template("qa").format(
+        user_input=state.user_input,
+        conversation_history=state.messages,
+        conversation_summary=state.conversation_summary,
+        active_documents=state.active_documents
     )
+
+    # LLM returns structured Pydantic AnswerResponse
+    answer: AnswerResponse = llm.invoke(prompt)
+
+    # Update agent state
+    state.current_response = answer
+    state.next_step = None  # or END depending on design
+    state.actions_taken.append("qa_agent")
+
+    return state
+
     
+def summarisation_agent_node(state: AgentState, config):
+    # Configure LLM with structured output
+    llm = config["llm"].with_structured_output(SummaryResponse)
 
-def summarisation_agent_node(state: AnswerResponse) -> AnswerResponse:
-    prompt = f"User request: {state.input}\nProvide a concise summary based on the documents."
-    response = llm.invoke(prompt)
-    summary = response.content.strip()
-
-    return AnswerResponse(
-        input=state.input,
-        action=state.action,
-        result=summary
+    # Prepare the prompt
+    prompt = get_chat_prompt_template("summarization").format(
+        user_input=state.user_input,
+        conversation_history=state.messages,
+        conversation_summary=state.conversation_summary,
+        active_documents=state.active_documents
     )
 
+    # Generate the structured summary
+    summary: SummaryResponse = llm.invoke(prompt)
+
+    # Update agent state
+    state.current_response = summary
+    state.actions_taken.append("summarisation_agent")
+    state.next_step = None  # workflow will go → update_memory
+
+    return state
