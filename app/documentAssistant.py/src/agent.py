@@ -16,7 +16,7 @@ workflow.add_conditional_edges(
     lambda s: s.next_step,
     {
         "qa_agent": "qa_agent",
-        "summarization_agent": "summarisation_agent",
+        "summarisation_agent": "summarisation_agent",
         "calculation_agent": END,
         None: END,
     }
@@ -25,7 +25,7 @@ workflow.add_conditional_edges(
 workflow.add_edge("qa_agent", END)
 workflow.add_edge("summarisation_agent", END)
 
-workflow.set_start_node("triage_agent")
+workflow.set_entry_point("triage_agent")
 
 graph = workflow.compile()
 
