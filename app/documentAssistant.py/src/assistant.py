@@ -1,5 +1,7 @@
+from app.tools import llm_with_tools
 from schemas import AgentState, UserIntent, AnswerResponse
 from prompts import get_intent_classification_prompt, get_chat_prompt_template
+from tools import retrieve_documents, search_specific_document
 from datetime import datetime
 
 def triage_agent_node(state: AgentState, config) -> AgentState: # Agent to classify user intent
@@ -32,12 +34,15 @@ def triage_agent_node(state: AgentState, config) -> AgentState: # Agent to class
         tools_used=state.tools_used,
         session_id=state.session_id,
         user_id=state.user_id,
-        actions_taken=state.actions_taken + ["classify_intent"]
+        actions_taken=state.actions_taken + ["classify_intent"],
+        retrieved_documents=state.retrieved_documents
     )
 
 def qa_agent_node(state: AgentState, config):
     # Use function_calling method to avoid the warning
     llm = config["configurable"]["llm"].with_structured_output(AnswerResponse, method="function_calling")
+    tools = [retrieve_documents, search_specific_document]
+    llm_with_tools = llm.bind_tools(tools)
 
     prompt = get_chat_prompt_template("qa").format(
         user_input=state.user_input,
@@ -47,7 +52,7 @@ def qa_agent_node(state: AgentState, config):
     )
 
     # LLM returns structured Pydantic AnswerResponse
-    answer: AnswerResponse = llm.invoke(prompt)
+    answer: AnswerResponse = llm_with_tools.invoke(prompt)
 
     # Create a new state with updated values
     return AgentState(
