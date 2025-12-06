@@ -1,8 +1,10 @@
 from schemas import AgentState, UserIntent, AnswerResponse
 from prompts import get_intent_classification_prompt, get_chat_prompt_template
+from datetime import datetime
 
 def triage_agent_node(state: AgentState, config) -> AgentState: # Agent to classify user intent
-    llm = config["llm"].with_structured_output(UserIntent)
+    # Access LLM from the configurable section
+    llm = config["configurable"]["llm"].with_structured_output(UserIntent)
 
     # Fetches the prompt template and fills in the variables
     # .format() replaces {user_input} and {conversation_history} with the actual values
@@ -13,21 +15,29 @@ def triage_agent_node(state: AgentState, config) -> AgentState: # Agent to class
 
     intent: UserIntent = llm.invoke(prompt)
 
-    state.intent = intent
-
-    # Validate intent and route to appropriate next step
-    state.next_step = (
-        "qa_agent" if intent.intent_type == "qa" else
-        "summarization_agent" if intent.intent_type == "summarization" else
-        "calculation_agent" if intent.intent_type == "calculation" else
-        "qa_agent"
+    # Create a new state with updated values
+    return AgentState(
+        user_input=state.user_input,
+        messages=state.messages,
+        intent=intent,
+        next_step=(
+            "qa_agent" if intent.intent_type == "qa" else
+            "summarisation_agent" if intent.intent_type == "summarisation" else  # Fixed: changed from "summarization" to "summarisation"
+            "calculation_agent" if intent.intent_type == "calculation" else
+            "qa_agent"
+        ),
+        conversation_summary=state.conversation_summary,
+        active_documents=state.active_documents,
+        current_response=state.current_response,
+        tools_used=state.tools_used,
+        session_id=state.session_id,
+        user_id=state.user_id,
+        actions_taken=state.actions_taken + ["classify_intent"]
     )
 
-    state.actions_taken.append("classify_intent")
-    return state
-
 def qa_agent_node(state: AgentState, config):
-    llm = config["llm"].with_structured_output(AnswerResponse)
+    # Use function_calling method to avoid the warning
+    llm = config["configurable"]["llm"].with_structured_output(AnswerResponse, method="function_calling")
 
     prompt = get_chat_prompt_template("qa").format(
         user_input=state.user_input,
@@ -39,17 +49,24 @@ def qa_agent_node(state: AgentState, config):
     # LLM returns structured Pydantic AnswerResponse
     answer: AnswerResponse = llm.invoke(prompt)
 
-    # Update agent state
-    state.current_response = answer
-    state.next_step = None  # or END depending on design
-    state.actions_taken.append("qa_agent")
+    # Create a new state with updated values
+    return AgentState(
+        user_input=state.user_input,
+        messages=state.messages,
+        intent=state.intent,
+        next_step=None,
+        conversation_summary=state.conversation_summary,
+        active_documents=state.active_documents,
+        current_response=answer,
+        tools_used=state.tools_used,
+        session_id=state.session_id,
+        user_id=state.user_id,
+        actions_taken=state.actions_taken + ["qa_agent"]
+    )
 
-    return state
-
-    
 def summarisation_agent_node(state: AgentState, config):
-    # Configure LLM with structured output
-    llm = config["llm"].with_structured_output(SummaryResponse)
+    # Configure LLM with structured output using function_calling
+    llm = config["configurable"]["llm"].with_structured_output(AnswerResponse, method="function_calling")
 
     # Prepare the prompt
     prompt = get_chat_prompt_template("summarization").format(
@@ -60,11 +77,19 @@ def summarisation_agent_node(state: AgentState, config):
     )
 
     # Generate the structured summary
-    summary: SummaryResponse = llm.invoke(prompt)
+    summary: AnswerResponse = llm.invoke(prompt)
 
-    # Update agent state
-    state.current_response = summary
-    state.actions_taken.append("summarisation_agent")
-    state.next_step = None  # workflow will go → update_memory
-
-    return state
+    # Create a new state with updated values
+    return AgentState(
+        user_input=state.user_input,
+        messages=state.messages,
+        intent=state.intent,
+        next_step=None,
+        conversation_summary=state.conversation_summary,
+        active_documents=state.active_documents,
+        current_response=summary,
+        tools_used=state.tools_used,
+        session_id=state.session_id,
+        user_id=state.user_id,
+        actions_taken=state.actions_taken + ["summarisation_agent"]
+    )
