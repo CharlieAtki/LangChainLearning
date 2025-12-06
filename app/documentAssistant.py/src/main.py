@@ -19,7 +19,7 @@ def main():
     
     # Create initial state using the Pydantic model
     initial_state = AgentState(
-        user_input="Can you summarise what data visualisation means?",
+        user_input="Can you summarise doc_3 ?",
         messages=[],  # Start with empty conversation history
         conversation_summary="",
         active_documents=[],  # Your active documents if any
