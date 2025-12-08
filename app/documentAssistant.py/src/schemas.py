@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import List, Literal, Optional, Dict, Any
+from typing import List, Literal, Optional, Dict, Any, Annotated
+import operator
 
 # ----- Response Schemas -----
 
@@ -48,8 +49,9 @@ class AgentState(BaseModel):
     session_id: Optional[str] = None
     user_id: Optional[str] = None
     
-    # Log of nodes executed this turn
-    actions_taken: List[str] = []
+    # Log of nodes executed this turn - with operator.add reducer
+    # This will accumulate actions across multiple state updates
+    actions_taken: Annotated[List[str], operator.add] = []
     
     # Store retrieved documents for the current session
     retrieved_documents: Optional[AnswerResponse] = None

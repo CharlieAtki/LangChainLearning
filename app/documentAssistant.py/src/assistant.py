@@ -16,25 +16,16 @@ def triage_agent_node(state: AgentState, config) -> AgentState:
 
     intent: UserIntent = llm.invoke(prompt)
 
-    return AgentState(
-        user_input=state.user_input,
-        messages=state.messages,
-        intent=intent,
-        next_step=(
+    return {
+        "intent": intent,
+        "next_step": (
             "qa_agent" if intent.intent_type == "qa" else
             "summarisation_agent" if intent.intent_type == "summarisation" else
             "calculation_agent" if intent.intent_type == "calculation" else
             "qa_agent"
         ),
-        conversation_summary=state.conversation_summary,
-        active_documents=state.active_documents,
-        current_response=state.current_response,
-        tools_used=state.tools_used,
-        session_id=state.session_id,
-        user_id=state.user_id,
-        actions_taken=state.actions_taken + ["classify_intent"],
-        retrieved_documents=state.retrieved_documents
-    )
+        "actions_taken": ["classify_intent"]
+    }
 
 
 def qa_agent_node(state: AgentState, config):
@@ -108,42 +99,25 @@ def qa_agent_node(state: AgentState, config):
                 retrieved_documents=retrieved_docs
             )
 
-            return AgentState(
-                user_input=state.user_input,
-                messages=state.messages + [state.user_input, final_answer],
-                intent=state.intent,
-                next_step=None,
-                conversation_summary=state.conversation_summary,
-                active_documents=state.active_documents,
-                current_response=answer_response,
-                tools_used=state.tools_used + tools_used,
-                session_id=state.session_id,
-                user_id=state.user_id,
-                actions_taken=state.actions_taken + ["qa_agent"],
-                retrieved_documents=state.retrieved_documents
-            )
+            return {
+                "messages": state.messages + [state.user_input, final_answer],
+                "current_response": answer_response,
+                "tools_used": state.tools_used + tools_used,
+                "actions_taken": ["qa_agent"]
+            }
 
     # If we hit max iterations, return what we have
-    return AgentState(
-        user_input=state.user_input,
-        messages=state.messages,
-        intent=state.intent,
-        next_step=None,
-        conversation_summary=state.conversation_summary,
-        active_documents=state.active_documents,
-        current_response=AnswerResponse(
+    return {
+        "current_response": AnswerResponse(
             question=state.user_input,
             answer="I couldn't complete the task within the allowed iterations.",
             sources=[],
             confidence=0.0,
             timestamp=datetime.now()
         ),
-        tools_used=state.tools_used + tools_used,
-        session_id=state.session_id,
-        user_id=state.user_id,
-        actions_taken=state.actions_taken + ["qa_agent"],
-        retrieved_documents=state.retrieved_documents
-    )
+        "tools_used": state.tools_used + tools_used,
+        "actions_taken": ["qa_agent"]
+    }
 
 
 def summarisation_agent_node(state: AgentState, config):
@@ -208,41 +182,24 @@ def summarisation_agent_node(state: AgentState, config):
                 retrieved_documents=retrieved_docs
             )
 
-            return AgentState(
-                user_input=state.user_input,
-                messages=state.messages + [state.user_input, final_summary],
-                intent=state.intent,
-                next_step=None,
-                conversation_summary=state.conversation_summary,
-                active_documents=state.active_documents,
-                current_response=summary_response,
-                tools_used=state.tools_used + tools_used,
-                session_id=state.session_id,
-                user_id=state.user_id,
-                actions_taken=state.actions_taken + ["summarisation_agent"],
-                retrieved_documents=state.retrieved_documents
-            )
+            return {
+                "messages": state.messages + [state.user_input, final_summary],
+                "current_response": summary_response,
+                "tools_used": state.tools_used + tools_used,
+                "actions_taken": ["summarisation_agent"]
+            }
 
-    return AgentState(
-        user_input=state.user_input,
-        messages=state.messages,
-        intent=state.intent,
-        next_step=None,
-        conversation_summary=state.conversation_summary,
-        active_documents=state.active_documents,
-        current_response=AnswerResponse(
+    return {
+        "current_response": AnswerResponse(
             question=state.user_input,
             answer="I couldn't complete the summarization within the allowed iterations.",
             sources=[],
             confidence=0.0,
             timestamp=datetime.now()
         ),
-        tools_used=state.tools_used + tools_used,
-        session_id=state.session_id,
-        user_id=state.user_id,
-        actions_taken=state.actions_taken + ["summarisation_agent"],
-        retrieved_documents=state.retrieved_documents
-    )
+        "tools_used": state.tools_used + tools_used,
+        "actions_taken": ["summarisation_agent"]
+    }
 
 
 def calculation_agent_node(state: AgentState, config):
@@ -308,38 +265,21 @@ def calculation_agent_node(state: AgentState, config):
                 retrieved_documents=retrieved_docs
             )
 
-            return AgentState(
-                user_input=state.user_input,
-                messages=state.messages + [state.user_input, final_answer],
-                intent=state.intent,
-                next_step=None,
-                conversation_summary=state.conversation_summary,
-                active_documents=state.active_documents,
-                current_response=calc_response,
-                tools_used=state.tools_used + tools_used,
-                session_id=state.session_id,
-                user_id=state.user_id,
-                actions_taken=state.actions_taken + ["calculation_agent"],
-                retrieved_documents=state.retrieved_documents
-            )
+            return {
+                "messages": state.messages + [state.user_input, final_answer],
+                "current_response": calc_response,
+                "tools_used": state.tools_used + tools_used,
+                "actions_taken": ["calculation_agent"]
+            }
 
-    return AgentState(
-        user_input=state.user_input,
-        messages=state.messages,
-        intent=state.intent,
-        next_step=None,
-        conversation_summary=state.conversation_summary,
-        active_documents=state.active_documents,
-        current_response=AnswerResponse(
+    return {
+        "current_response": AnswerResponse(
             question=state.user_input,
             answer="I couldn't complete the calculation within the allowed iterations.",
             sources=[],
             confidence=0.0,
             timestamp=datetime.now()
         ),
-        tools_used=state.tools_used + tools_used,
-        session_id=state.session_id,
-        user_id=state.user_id,
-        actions_taken=state.actions_taken + ["calculation_agent"],
-        retrieved_documents=state.retrieved_documents
-    )
+        "tools_used": state.tools_used + tools_used,
+        "actions_taken": ["calculation_agent"]
+    }

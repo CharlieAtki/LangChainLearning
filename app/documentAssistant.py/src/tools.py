@@ -6,10 +6,10 @@ import json
 @tool
 def retrieve_documents(query: str, max_results: int = 5) -> List[Dict[str, Any]]:
     """
-    Retrieve documents based on a search query.
+    Retrieve documents based on a search query or document ID.
 
     Args:
-        query: The search query to find relevant documents
+        query: The search query or document ID (e.g., "doc_1", "machine learning", "visualization")
         max_results: Maximum number of documents to return
 
     Returns:
@@ -53,11 +53,19 @@ def retrieve_documents(query: str, max_results: int = 5) -> List[Dict[str, Any]]
     query_lower = query.lower()
     query_words = query_lower.split()
 
+    # Check if query is a specific document ID
+    if query_lower.startswith("doc_") or query_lower.startswith("document_"):
+        doc_id = query_lower.replace("document_", "doc_")
+        matching_docs = [doc for doc in mock_documents if doc["id"] == doc_id]
+        if matching_docs:
+            print(f"[TOOL] retrieve_documents: Found document by ID '{doc_id}'")
+            return matching_docs
+
     # Score each document based on relevance
     scored_docs = []
     for doc in mock_documents:
         score = 0
-        doc_text = (doc["content"] + " " + doc["title"]).lower()
+        doc_text = (doc["content"] + " " + doc["title"] + " " + doc["id"]).lower()
 
         # Check for exact phrase match (higher score)
         if query_lower in doc_text:
